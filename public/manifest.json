@@ -1,7 +1,7 @@
 {
   "name": "App Servicios",
   "short_name": "Servicios",
-  "description": "Encuentra servicios, comida y arriendos cerca de ti",
+  "description": "Encuentra servicios cerca de ti",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
