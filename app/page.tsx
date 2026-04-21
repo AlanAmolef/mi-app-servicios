@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import UserNavButton from "./components/UserNavButton";
+import InstallButton from "./components/InstallButton";
 import { useUserLocation } from "./components/useUserLocation";
 import {
   calcularDistanciaEnMetros,
@@ -93,7 +94,8 @@ export default function Home() {
         };
       })
       .sort((a, b) => {
-        if (a.distanciaCalculada === null && b.distanciaCalculada === null) return 0;
+        if (a.distanciaCalculada === null && b.distanciaCalculada === null)
+          return 0;
         if (a.distanciaCalculada === null) return 1;
         if (b.distanciaCalculada === null) return -1;
         return a.distanciaCalculada - b.distanciaCalculada;
@@ -108,7 +110,9 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+        <InstallButton />
+
+        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
           <div className="flex items-center justify-between text-sm mb-4">
             <span>📍</span>
             <span>🔔</span>
