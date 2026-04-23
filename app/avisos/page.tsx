@@ -269,10 +269,10 @@ export default function AvisosPage() {
                 <span>Inicio</span>
               </Link>
 
-              <button className="flex flex-col items-center gap-1 text-gray-700 font-medium">
+              <Link href="/buscar" className="flex flex-col items-center gap-1 text-gray-700 font-medium">
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
-              </button>
+              </Link>
 
               <Link
                 href="/publicar"

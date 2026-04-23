@@ -273,10 +273,10 @@ export default function ComidaPage() {
                 <span>Inicio</span>
               </Link>
 
-              <button className="flex flex-col items-center gap-1 text-green-600 font-medium">
+              <Link href="/buscar" className="flex flex-col items-center gap-1 text-green-600 font-medium">
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
-              </button>
+              </Link>
 
               <Link
                 href="/publicar"

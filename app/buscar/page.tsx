@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import UserNavButton from "./components/UserNavButton";
-import InstallButton from "./components/InstallButton";
-import { useUserLocation } from "./components/useUserLocation";
+import UserNavButton from "../components/UserNavButton";
+import FavoriteButton from "../components/FavoriteButton";
+import { useUserLocation } from "../components/useUserLocation";
 import {
   calcularDistanciaEnMetros,
   formatearDistancia,
 } from "@/lib/distance";
-import FavoriteButton from "./components/FavoriteButton";
 
 type Publicacion = {
   id: number;
@@ -30,10 +29,21 @@ type PublicacionConDistancia = Publicacion & {
   distanciaCalculada: number | null;
 };
 
-export default function Home() {
+const categoriasDisponibles = [
+  "Todas",
+  "Servicios",
+  "Comida",
+  "Arriendos",
+  "Avisos",
+];
+
+export default function BuscarPage() {
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [mensaje, setMensaje] = useState("Cargando publicaciones...");
   const [busqueda, setBusqueda] = useState("");
+  const [categoriaActiva, setCategoriaActiva] = useState("Todas");
+  const [soloDisponibles, setSoloDisponibles] = useState(false);
+  const [ordenCercania, setOrdenCercania] = useState(true);
 
   const { latUsuario, lonUsuario } = useUserLocation();
 
@@ -42,8 +52,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from("publicaciones")
         .select("*")
-        .order("id", { ascending: false })
-        .limit(50);
+        .order("id", { ascending: false });
 
       if (error) {
         setMensaje("Error al cargar publicaciones");
@@ -57,19 +66,22 @@ export default function Home() {
     cargarPublicaciones();
   }, []);
 
-  const publicacionesConDistancia: PublicacionConDistancia[] = useMemo(() => {
+  const resultados: PublicacionConDistancia[] = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
 
-    return publicaciones
+    let lista = publicaciones
       .filter((item) => {
-        if (!texto) return true;
-
-        return (
+        const coincideTexto =
+          !texto ||
           item.titulo.toLowerCase().includes(texto) ||
           item.descripcion?.toLowerCase().includes(texto) ||
           item.categoria.toLowerCase().includes(texto) ||
-          item.ubicacion?.toLowerCase().includes(texto)
-        );
+          item.ubicacion?.toLowerCase().includes(texto);
+
+        const coincideCategoria =
+          categoriaActiva === "Todas" || item.categoria === categoriaActiva;
+
+        return coincideTexto && coincideCategoria;
       })
       .map((item) => {
         let distanciaCalculada: number | null = null;
@@ -92,8 +104,14 @@ export default function Home() {
           ...item,
           distanciaCalculada,
         };
-      })
-      .sort((a, b) => {
+      });
+
+    if (soloDisponibles) {
+      lista = lista.filter((item) => item.disponible);
+    }
+
+    if (ordenCercania) {
+      lista = lista.sort((a, b) => {
         if (a.distanciaCalculada === null && b.distanciaCalculada === null) {
           return 0;
         }
@@ -101,7 +119,18 @@ export default function Home() {
         if (b.distanciaCalculada === null) return -1;
         return a.distanciaCalculada - b.distanciaCalculada;
       });
-  }, [publicaciones, latUsuario, lonUsuario, busqueda]);
+    }
+
+    return lista;
+  }, [
+    publicaciones,
+    busqueda,
+    categoriaActiva,
+    soloDisponibles,
+    ordenCercania,
+    latUsuario,
+    lonUsuario,
+  ]);
 
   const crearLinkWhatsApp = (telefono: string, titulo: string) => {
     const mensaje = `Hola, vi tu publicación en la app. Me interesa "${titulo}". ¿Sigue disponible?`;
@@ -111,17 +140,21 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-        <InstallButton />
-
-        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
+        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
           <div className="flex items-center justify-between text-sm mb-4">
-            <span>📍</span>
-            <span>🔔</span>
+            <Link
+              href="/"
+              className="rounded-full bg-white/20 px-3 py-1 text-sm font-medium"
+            >
+              ←
+            </Link>
+            <span>🔎</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-center">
-            Servicios cerca de ti
-          </h1>
+          <h1 className="text-2xl font-bold text-center">Buscar</h1>
+          <p className="text-center text-sm text-blue-100 mt-2">
+            Busca entre todas las publicaciones
+          </p>
 
           <div className="mt-4 bg-white rounded-2xl px-4 py-3 flex items-center gap-2 shadow-sm">
             <span className="text-gray-400">🔍</span>
@@ -130,67 +163,77 @@ export default function Home() {
               onChange={(e) => setBusqueda(e.target.value)}
               className="w-full outline-none text-gray-700 placeholder:text-gray-400"
               placeholder="¿Qué necesitas hoy?"
+              autoFocus
             />
-            <span className="text-gray-400">🎤</span>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            <Link
-              href="/servicios"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
-              <div className="text-2xl">🛠️</div>
-              <div className="text-xs mt-1 text-blue-700 font-medium">
-                Servicios
-              </div>
-            </Link>
-
-            <Link
-              href="/comida"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
-              <div className="text-2xl">🍔</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Comida
-              </div>
-            </Link>
-
-            <Link
-              href="/arriendos"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
-              <div className="text-2xl">🏠</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Arriendos
-              </div>
-            </Link>
-
-            <Link
-              href="/avisos"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
-              <div className="text-2xl">📣</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Avisos
-              </div>
-            </Link>
+            {busqueda ? (
+              <button
+                type="button"
+                onClick={() => setBusqueda("")}
+                className="text-gray-400 text-sm"
+              >
+                ✕
+              </button>
+            ) : (
+              <span className="text-gray-400">🎤</span>
+            )}
           </div>
         </div>
+
+        <section className="px-4 mt-4">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {categoriasDisponibles.map((categoria) => (
+              <button
+                key={categoria}
+                type="button"
+                onClick={() => setCategoriaActiva(categoria)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
+                  categoriaActiva === categoria
+                    ? "bg-blue-600 text-white"
+                    : "border bg-white text-gray-700"
+                }`}
+              >
+                {categoria}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="px-4 mt-3">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setOrdenCercania(!ordenCercania)}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
+                ordenCercania
+                  ? "bg-blue-600 text-white"
+                  : "border bg-white text-gray-700"
+              }`}
+            >
+              📍 Más cercanos
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSoloDisponibles(!soloDisponibles)}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
+                soloDisponibles
+                  ? "bg-green-600 text-white"
+                  : "border bg-white text-gray-700"
+              }`}
+            >
+              ✅ Solo disponibles
+            </button>
+          </div>
+        </section>
 
         <section className="px-4 mt-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-900 text-lg">
-                Publicaciones cerca de ti
-              </h2>
+              <h2 className="font-bold text-gray-900 text-lg">Resultados</h2>
               <p className="text-sm text-gray-500">
-                Datos reales ordenados por cercanía
+                {resultados.length} publicación{resultados.length === 1 ? "" : "es"}
               </p>
             </div>
-
-            <Link href="/buscar" className="text-sm text-gray-500 font-medium">
-              Ver más
-            </Link>
           </div>
 
           <div className="mt-3 space-y-3">
@@ -198,14 +241,14 @@ export default function Home() {
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
                 <p className="text-sm text-gray-500">{mensaje}</p>
               </div>
-            ) : publicacionesConDistancia.length === 0 ? (
+            ) : resultados.length === 0 ? (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
                 <p className="text-sm text-gray-500">
-                  No se encontraron publicaciones.
+                  No se encontraron publicaciones con esa búsqueda.
                 </p>
               </div>
             ) : (
-              publicacionesConDistancia.map((item) => (
+              resultados.map((item) => (
                 <div
                   key={item.id}
                   className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
@@ -293,12 +336,15 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-              <Link href="/" className="flex flex-col items-center text-blue-600">
+              <Link href="/" className="flex flex-col items-center">
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
 
-              <Link href="/buscar" className="flex flex-col items-center">
+              <Link
+                href="/buscar"
+                className="flex flex-col items-center text-blue-600 font-medium"
+              >
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
