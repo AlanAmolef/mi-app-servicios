@@ -19,7 +19,7 @@ export function useUserLocation() {
   };
 
   const pedirUbicacion = () => {
-    if (latUsuario !== null && lonUsuario !== null) return;
+    setErrorUbicacion(null);
 
     if (!navigator.geolocation) {
       setErrorUbicacion("Tu navegador no permite usar ubicación.");
@@ -27,23 +27,37 @@ export function useUserLocation() {
     }
 
     setCargandoUbicacion(true);
-    setErrorUbicacion(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         guardarUbicacion(position.coords.latitude, position.coords.longitude);
         setCargandoUbicacion(false);
       },
-      () => {
+      (error) => {
         setCargandoUbicacion(false);
-        setErrorUbicacion(
-          "Activa la ubicación para ver publicaciones cercanas."
-        );
+
+        if (error.code === error.PERMISSION_DENIED) {
+          setErrorUbicacion(
+            "La ubicación está bloqueada. Actívala en los permisos del navegador."
+          );
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setErrorUbicacion(
+            "No se pudo obtener tu ubicación. Revisa que el GPS esté activado."
+          );
+        } else if (error.code === error.TIMEOUT) {
+          setErrorUbicacion(
+            "La ubicación tardó demasiado. Intenta nuevamente."
+          );
+        } else {
+          setErrorUbicacion(
+            "No se pudo obtener tu ubicación. Intenta nuevamente."
+          );
+        }
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 60000,
+        timeout: 20000,
+        maximumAge: 0,
       }
     );
   };
