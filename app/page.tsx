@@ -35,7 +35,13 @@ export default function Home() {
   const [mensaje, setMensaje] = useState("Cargando publicaciones...");
   const [busqueda, setBusqueda] = useState("");
 
-  const { latUsuario, lonUsuario } = useUserLocation();
+  const {
+    latUsuario,
+    lonUsuario,
+    pedirUbicacion,
+    cargandoUbicacion,
+    errorUbicacion,
+  } = useUserLocation();
 
   useEffect(() => {
     const cargarPublicaciones = async () => {
@@ -108,6 +114,8 @@ export default function Home() {
     return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
   };
 
+  const ubicacionActiva = latUsuario !== null && lonUsuario !== null;
+
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
@@ -115,8 +123,20 @@ export default function Home() {
 
         <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
           <div className="flex items-center justify-between text-sm mb-4">
-            <span>📍</span>
-            <span>🔔</span>
+            <button
+              type="button"
+              onClick={pedirUbicacion}
+              disabled={cargandoUbicacion || ubicacionActiva}
+              className="bg-white/15 text-white text-xs px-3 py-1 rounded-full disabled:opacity-90"
+            >
+              {ubicacionActiva
+                ? "Ubicación activa"
+                : cargandoUbicacion
+                ? "Activando..."
+                : "Activar ubicación"}
+            </button>
+
+            <span className="bg-white/15 px-2 py-1 rounded-full">🔔</span>
           </div>
 
           <h1 className="text-2xl font-bold text-center">
@@ -128,6 +148,7 @@ export default function Home() {
             <input
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
+              onFocus={pedirUbicacion}
               className="w-full outline-none text-gray-700 placeholder:text-gray-400"
               placeholder="¿Qué necesitas hoy?"
             />
@@ -135,50 +156,30 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-4 gap-2 mt-4">
-            <Link
-              href="/servicios"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
+            <Link href="/servicios" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
               <div className="text-2xl">🛠️</div>
-              <div className="text-xs mt-1 text-blue-700 font-medium">
-                Servicios
-              </div>
+              <div className="text-xs mt-1 text-blue-700 font-medium">Servicios</div>
             </Link>
 
-            <Link
-              href="/comida"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
+            <Link href="/comida" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
               <div className="text-2xl">🍔</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Comida
-              </div>
+              <div className="text-xs mt-1 text-gray-700 font-medium">Comida</div>
             </Link>
 
-            <Link
-              href="/arriendos"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
+            <Link href="/arriendos" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
               <div className="text-2xl">🏠</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Arriendos
-              </div>
+              <div className="text-xs mt-1 text-gray-700 font-medium">Arriendos</div>
             </Link>
 
-            <Link
-              href="/avisos"
-              className="bg-white rounded-2xl p-3 text-center shadow-sm"
-            >
+            <Link href="/avisos" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
               <div className="text-2xl">📣</div>
-              <div className="text-xs mt-1 text-gray-700 font-medium">
-                Avisos
-              </div>
+              <div className="text-xs mt-1 text-gray-700 font-medium">Avisos</div>
             </Link>
           </div>
         </div>
 
         <section className="px-4 mt-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-bold text-gray-900 text-lg">
                 Publicaciones cerca de ti
@@ -188,10 +189,35 @@ export default function Home() {
               </p>
             </div>
 
-            <Link href="/buscar" className="text-sm text-gray-500 font-medium">
+            <Link
+              href="/buscar"
+              onClick={pedirUbicacion}
+              className="text-sm text-gray-500 font-medium pt-1"
+            >
               Ver más
             </Link>
           </div>
+
+          {!ubicacionActiva ? (
+            <button
+              type="button"
+              onClick={pedirUbicacion}
+              disabled={cargandoUbicacion}
+              className="mt-3 w-full rounded-2xl bg-white border border-blue-100 text-blue-700 text-sm font-semibold px-4 py-3 shadow-sm"
+            >
+              {cargandoUbicacion
+                ? "Obteniendo ubicación..."
+                : "Usar mi ubicación para ordenar por cercanía"}
+            </button>
+          ) : (
+            <p className="mt-2 text-xs text-green-700 font-medium">
+              Ubicación activa. Las publicaciones se ordenan por cercanía.
+            </p>
+          )}
+
+          {errorUbicacion && (
+            <p className="mt-2 text-xs text-red-600">{errorUbicacion}</p>
+          )}
 
           <div className="mt-3 space-y-3">
             {mensaje ? (
@@ -213,6 +239,7 @@ export default function Home() {
                   <div className="flex gap-3">
                     <Link
                       href={`/publicacion/${item.id}`}
+                      onClick={pedirUbicacion}
                       className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0 block"
                     >
                       {item.imagen_url ? (
@@ -232,6 +259,7 @@ export default function Home() {
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/publicacion/${item.id}`}
+                          onClick={pedirUbicacion}
                           className="font-semibold text-sm text-gray-900 truncate hover:underline"
                         >
                           {item.titulo}
@@ -277,6 +305,7 @@ export default function Home() {
                       href={crearLinkWhatsApp(item.telefono, item.titulo)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={pedirUbicacion}
                       className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
                     >
                       Contactar
@@ -293,24 +322,24 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-              <Link href="/" className="flex flex-col items-center text-blue-600">
+              <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center text-blue-600">
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
 
-              <Link href="/buscar" className="flex flex-col items-center">
+              <Link href="/buscar" onClick={pedirUbicacion} className="flex flex-col items-center">
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
 
-              <Link href="/publicar" className="flex flex-col items-center -mt-8">
+              <Link href="/publicar" onClick={pedirUbicacion} className="flex flex-col items-center -mt-8">
                 <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
               </Link>
 
-              <Link href="/favoritos" className="flex flex-col items-center">
+              <Link href="/favoritos" onClick={pedirUbicacion} className="flex flex-col items-center">
                 <span className="text-xl">❤️</span>
                 <span>Favoritos</span>
               </Link>
