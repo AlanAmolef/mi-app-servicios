@@ -122,7 +122,7 @@ export default function Home() {
         <InstallButton />
 
         <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
-          <div className="flex items-center justify-between text-sm mb-4">
+          <div className="flex items-center justify-start text-sm mb-4">
             <button
               type="button"
               onClick={pedirUbicacion}
@@ -135,8 +135,6 @@ export default function Home() {
                 ? "Activando..."
                 : "Activar ubicación"}
             </button>
-
-            <span className="bg-white/15 px-2 py-1 rounded-full">🔔</span>
           </div>
 
           <h1 className="text-2xl font-bold text-center">
@@ -211,7 +209,7 @@ export default function Home() {
             </button>
           ) : (
             <p className="mt-2 text-xs text-green-700 font-medium">
-              Ubicación activa. Las publicaciones se ordenan por cercanía.
+              Mostrando resultados cercanos a ti.
             </p>
           )}
 
