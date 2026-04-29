@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import GlobalLocationPrompt from "@/app/components/GlobalLocationPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,6 +35,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
+
+        <GlobalLocationPrompt />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
