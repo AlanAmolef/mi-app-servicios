@@ -12,23 +12,20 @@ type EstadoPermiso = "desconocido" | "preguntar" | "permitido" | "bloqueado";
 export function useUserLocation() {
   const [latUsuario, setLatUsuario] = useState<number | null>(null);
   const [lonUsuario, setLonUsuario] = useState<number | null>(null);
-  const [ubicacionActualizada, setUbicacionActualizada] = useState<string | null>(
-    null
-  );
+  const [ubicacionActualizada, setUbicacionActualizada] = useState<string | null>(null);
   const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
   const [errorUbicacion, setErrorUbicacion] = useState<string | null>(null);
-  const [estadoPermiso, setEstadoPermiso] =
-    useState<EstadoPermiso>("desconocido");
+  const [estadoPermiso, setEstadoPermiso] = useState<EstadoPermiso>("desconocido");
 
   const cargarUbicacionGuardada = useCallback(() => {
-    const latGuardada = localStorage.getItem(LAT_KEY);
-    const lonGuardada = localStorage.getItem(LON_KEY);
-    const fechaGuardada = localStorage.getItem(UPDATED_AT_KEY);
+    const lat = localStorage.getItem(LAT_KEY);
+    const lon = localStorage.getItem(LON_KEY);
+    const fecha = localStorage.getItem(UPDATED_AT_KEY);
 
-    if (latGuardada && lonGuardada) {
-      setLatUsuario(Number(latGuardada));
-      setLonUsuario(Number(lonGuardada));
-      setUbicacionActualizada(fechaGuardada);
+    if (lat && lon) {
+      setLatUsuario(Number(lat));
+      setLonUsuario(Number(lon));
+      setUbicacionActualizada(fecha);
     }
   }, []);
 
@@ -46,6 +43,16 @@ export function useUserLocation() {
     setErrorUbicacion(null);
 
     window.dispatchEvent(new Event(LOCATION_EVENT));
+  };
+
+  const obtenerUbicacion = (altaPrecision: boolean) => {
+    return new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: altaPrecision,
+        timeout: altaPrecision ? 20000 : 10000,
+        maximumAge: 5 * 60 * 1000,
+      });
+    });
   };
 
   const consultarEstadoPermiso = async () => {
@@ -70,49 +77,77 @@ export function useUserLocation() {
     }
   };
 
-  const pedirUbicacion = () => {
+  const pedirUbicacion = async () => {
     setErrorUbicacion(null);
 
     if (!navigator.geolocation) {
-      setErrorUbicacion("Tu navegador no permite usar ubicación.");
+      setErrorUbicacion("Este celular o navegador no permite usar ubicación.");
       return;
     }
 
     setCargandoUbicacion(true);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        guardarUbicacion(position.coords.latitude, position.coords.longitude);
+    try {
+      // Primero intenta una ubicación rápida y simple.
+      const posicionRapida = await obtenerUbicacion(false);
+
+      guardarUbicacion(
+        posicionRapida.coords.latitude,
+        posicionRapida.coords.longitude
+      );
+
+      setCargandoUbicacion(false);
+
+      // Después intenta mejorarla en segundo plano.
+      obtenerUbicacion(true)
+        .then((posicionPrecisa) => {
+          guardarUbicacion(
+            posicionPrecisa.coords.latitude,
+            posicionPrecisa.coords.longitude
+          );
+        })
+        .catch(() => {});
+    } catch (error: any) {
+      try {
+        // Segundo intento, con mayor precisión.
+        const posicionPrecisa = await obtenerUbicacion(true);
+
+        guardarUbicacion(
+          posicionPrecisa.coords.latitude,
+          posicionPrecisa.coords.longitude
+        );
+
         setCargandoUbicacion(false);
-      },
-      (error) => {
+      } catch (errorFinal: any) {
         setCargandoUbicacion(false);
 
-        if (error.code === error.PERMISSION_DENIED) {
+        if (errorFinal?.code === 1) {
           setEstadoPermiso("bloqueado");
           setErrorUbicacion(
-            "La ubicación está bloqueada. Debes permitirla en el navegador."
+            "La ubicación está bloqueada. Actívala desde los permisos del navegador."
           );
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          setErrorUbicacion(
-            "No se pudo obtener tu ubicación. Revisa que el GPS esté activado."
-          );
-        } else if (error.code === error.TIMEOUT) {
-          setErrorUbicacion(
-            "La ubicación tardó demasiado. Intenta nuevamente."
-          );
-        } else {
-          setErrorUbicacion(
-            "No se pudo obtener tu ubicación. Intenta nuevamente."
-          );
+          return;
         }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 0,
+
+        if (errorFinal?.code === 2) {
+          setErrorUbicacion(
+            "No pudimos detectar tu ubicación. Activa el GPS del celular e intenta nuevamente."
+          );
+          return;
+        }
+
+        if (errorFinal?.code === 3) {
+          setErrorUbicacion(
+            "La ubicación tardó demasiado. Intenta nuevamente en unos segundos."
+          );
+          return;
+        }
+
+        setErrorUbicacion(
+          "No pudimos obtener tu ubicación. Intenta nuevamente."
+        );
       }
-    );
+    }
   };
 
   const actualizarUbicacion = () => {
