@@ -33,7 +33,7 @@ type PublicacionConDistancia = Publicacion & {
 export default function AvisosPage() {
   const [avisos, setAvisos] = useState<Publicacion[]>([]);
   const [mensaje, setMensaje] = useState("Cargando publicaciones...");
-  const { latUsuario, lonUsuario } = useUserLocation();
+  const { latUsuario, lonUsuario, pedirUbicacion } = useUserLocation();
 
   const [busqueda, setBusqueda] = useState("");
   const [ordenCercania, setOrdenCercania] = useState(true);
@@ -65,7 +65,12 @@ export default function AvisosPage() {
     let lista = avisos
       .filter((aviso) => {
         if (!texto) return true;
-        return aviso.titulo.toLowerCase().startsWith(texto);
+
+        return (
+          aviso.titulo.toLowerCase().includes(texto) ||
+          aviso.descripcion?.toLowerCase().includes(texto) ||
+          aviso.ubicacion?.toLowerCase().includes(texto)
+        );
       })
       .map((aviso) => {
         let distanciaCalculada: number | null = null;
@@ -123,14 +128,13 @@ export default function AvisosPage() {
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
         <div className="bg-gray-700 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
-          <div className="flex items-center justify-between text-sm mb-4">
+          <div className="flex items-center justify-start text-sm mb-4">
             <Link
               href="/"
               className="rounded-full bg-white/20 px-3 py-1 text-sm font-medium"
             >
               ←
             </Link>
-            <span>🔔</span>
           </div>
 
           <h1 className="text-2xl font-bold text-center">Avisos</h1>
@@ -140,6 +144,7 @@ export default function AvisosPage() {
             <input
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
+              onFocus={pedirUbicacion}
               className="w-full outline-none text-gray-700 placeholder:text-gray-400"
               placeholder="Buscar avisos..."
             />
@@ -194,6 +199,7 @@ export default function AvisosPage() {
                   <div className="flex gap-3">
                     <Link
                       href={`/publicacion/${aviso.id}`}
+                      onClick={pedirUbicacion}
                       className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
                     >
                       {aviso.imagen_url ? (
@@ -212,6 +218,7 @@ export default function AvisosPage() {
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/publicacion/${aviso.id}`}
+                        onClick={pedirUbicacion}
                         className="font-semibold text-sm text-gray-900 hover:underline block truncate"
                       >
                         {aviso.titulo}
@@ -248,6 +255,7 @@ export default function AvisosPage() {
                       href={crearLinkWhatsApp(aviso.telefono, aviso.titulo)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={pedirUbicacion}
                       className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
                     >
                       Contactar
@@ -264,18 +272,27 @@ export default function AvisosPage() {
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-              <Link href="/" className="flex flex-col items-center gap-1">
+              <Link
+                href="/"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center gap-1"
+              >
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
 
-              <Link href="/buscar" className="flex flex-col items-center gap-1 text-gray-700 font-medium">
+              <Link
+                href="/buscar"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center gap-1 text-gray-700 font-medium"
+              >
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
 
               <Link
                 href="/publicar"
+                onClick={pedirUbicacion}
                 className="flex flex-col items-center gap-1 -mt-8"
               >
                 <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
@@ -284,7 +301,11 @@ export default function AvisosPage() {
                 <span className="mt-1">Publicar</span>
               </Link>
 
-              <Link href="/favoritos" className="flex flex-col items-center">
+              <Link
+                href="/favoritos"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center"
+              >
                 <span className="text-xl">❤️</span>
                 <span>Favoritos</span>
               </Link>
