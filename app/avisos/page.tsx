@@ -127,7 +127,9 @@ export default function AvisosPage() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-        <div className="bg-gray-700 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+
+        {/* HEADER */}
+        <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
           <div className="flex items-center justify-start text-sm mb-4">
             <Link
               href="/"
@@ -152,13 +154,14 @@ export default function AvisosPage() {
           </div>
         </div>
 
+        {/* FILTROS */}
         <section className="px-4 mt-4">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setOrdenCercania(!ordenCercania)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
                 ordenCercania
-                  ? "bg-gray-700 text-white"
+                  ? "bg-slate-600 text-white"
                   : "border bg-white text-gray-700"
               }`}
             >
@@ -178,6 +181,7 @@ export default function AvisosPage() {
           </div>
         </section>
 
+        {/* LISTA */}
         <section className="px-4 mt-5">
           <div className="mt-3 space-y-3">
             {mensaje ? (
@@ -269,43 +273,29 @@ export default function AvisosPage() {
           </div>
         </section>
 
+        {/* NAVBAR */}
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-              <Link
-                href="/"
-                onClick={pedirUbicacion}
-                className="flex flex-col items-center gap-1"
-              >
+
+              <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center gap-1">
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
 
-              <Link
-                href="/buscar"
-                onClick={pedirUbicacion}
-                className="flex flex-col items-center gap-1 text-gray-700 font-medium"
-              >
+              <Link href="/buscar" onClick={pedirUbicacion} className="flex flex-col items-center gap-1 text-slate-600 font-medium">
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
 
-              <Link
-                href="/publicar"
-                onClick={pedirUbicacion}
-                className="flex flex-col items-center gap-1 -mt-8"
-              >
-                <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
+              <Link href="/publicar" onClick={pedirUbicacion} className="flex flex-col items-center gap-1 -mt-8">
+                <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
               </Link>
 
-              <Link
-                href="/favoritos"
-                onClick={pedirUbicacion}
-                className="flex flex-col items-center"
-              >
+              <Link href="/favoritos" onClick={pedirUbicacion} className="flex flex-col items-center">
                 <span className="text-xl">❤️</span>
                 <span>Favoritos</span>
               </Link>
@@ -314,6 +304,7 @@ export default function AvisosPage() {
             </div>
           </div>
         </div>
+
       </div>
     </main>
   );

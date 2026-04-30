@@ -140,7 +140,9 @@ export default function BuscarPage() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+
+        {/* HEADER */}
+        <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
           <div className="flex items-center justify-between text-sm mb-4">
             <Link
               href="/"
@@ -152,7 +154,7 @@ export default function BuscarPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-center">Buscar</h1>
-          <p className="text-center text-sm text-blue-100 mt-2">
+          <p className="text-center text-sm text-slate-100 mt-2">
             Busca entre todas las publicaciones
           </p>
 
@@ -179,6 +181,7 @@ export default function BuscarPage() {
           </div>
         </div>
 
+        {/* CATEGORÍAS */}
         <section className="px-4 mt-4">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {categoriasDisponibles.map((categoria) => (
@@ -188,7 +191,7 @@ export default function BuscarPage() {
                 onClick={() => setCategoriaActiva(categoria)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
                   categoriaActiva === categoria
-                    ? "bg-blue-600 text-white"
+                    ? "bg-slate-600 text-white"
                     : "border bg-white text-gray-700"
                 }`}
               >
@@ -198,6 +201,7 @@ export default function BuscarPage() {
           </div>
         </section>
 
+        {/* FILTROS */}
         <section className="px-4 mt-3">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
@@ -205,7 +209,7 @@ export default function BuscarPage() {
               onClick={() => setOrdenCercania(!ordenCercania)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
                 ordenCercania
-                  ? "bg-blue-600 text-white"
+                  ? "bg-slate-600 text-white"
                   : "border bg-white text-gray-700"
               }`}
             >
@@ -226,6 +230,7 @@ export default function BuscarPage() {
           </div>
         </section>
 
+        {/* RESULTADOS */}
         <section className="px-4 mt-5">
           <div className="flex items-center justify-between">
             <div>
@@ -291,7 +296,7 @@ export default function BuscarPage() {
                         </p>
                       )}
 
-                      <p className="text-xs text-blue-700 font-medium mt-1">
+                      <p className="text-xs text-slate-700 font-medium mt-1">
                         {item.precio || "Sin precio"}
                       </p>
 
@@ -333,6 +338,7 @@ export default function BuscarPage() {
           </div>
         </section>
 
+        {/* NAVBAR */}
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
@@ -343,14 +349,14 @@ export default function BuscarPage() {
 
               <Link
                 href="/buscar"
-                className="flex flex-col items-center text-blue-600 font-medium"
+                className="flex flex-col items-center text-slate-600 font-medium"
               >
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
 
               <Link href="/publicar" className="flex flex-col items-center -mt-8">
-                <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
+                <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
@@ -365,6 +371,7 @@ export default function BuscarPage() {
             </div>
           </div>
         </div>
+
       </div>
     </main>
   );

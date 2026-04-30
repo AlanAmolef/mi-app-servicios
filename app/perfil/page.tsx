@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "../components/AuthGuard";
+import UserNavButton from "../components/UserNavButton";
+import { useUserLocation } from "../components/useUserLocation";
 
 type Usuario = {
   email: string;
@@ -15,6 +17,7 @@ export default function PerfilPage() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [mensaje, setMensaje] = useState("Cargando perfil...");
   const router = useRouter();
+  const { pedirUbicacion } = useUserLocation();
 
   useEffect(() => {
     const cargarUsuario = async () => {
@@ -50,7 +53,7 @@ export default function PerfilPage() {
         <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
           
           {/* Header */}
-          <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+          <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
             <div className="flex items-center justify-between text-sm mb-4">
               <Link
                 href="/"
@@ -62,7 +65,7 @@ export default function PerfilPage() {
             </div>
 
             <h1 className="text-2xl font-bold text-center">Perfil</h1>
-            <p className="text-center text-sm text-blue-100 mt-2">
+            <p className="text-center text-sm text-slate-100 mt-2">
               Tu espacio personal dentro de la app
             </p>
           </div>
@@ -91,7 +94,7 @@ export default function PerfilPage() {
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 space-y-3">
                   <Link
                     href="/mis-publicaciones"
-                    className="block w-full rounded-xl bg-blue-600 text-white text-center py-3 font-medium"
+                    className="block w-full rounded-xl bg-slate-600 text-white text-center py-3 font-medium"
                   >
                     Ver mis publicaciones
                   </Link>
@@ -106,6 +109,54 @@ export default function PerfilPage() {
               </>
             )}
           </section>
+
+          {/* NAVBAR */}
+          <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
+            <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
+              <div className="flex items-end justify-between text-xs text-gray-500">
+
+                <Link
+                  href="/"
+                  onClick={pedirUbicacion}
+                  className="flex flex-col items-center"
+                >
+                  <span className="text-xl">🏠</span>
+                  <span>Inicio</span>
+                </Link>
+
+                <Link
+                  href="/buscar"
+                  onClick={pedirUbicacion}
+                  className="flex flex-col items-center"
+                >
+                  <span className="text-xl">🔍</span>
+                  <span>Buscar</span>
+                </Link>
+
+                <Link
+                  href="/publicar"
+                  onClick={pedirUbicacion}
+                  className="flex flex-col items-center -mt-8"
+                >
+                  <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
+                    +
+                  </span>
+                  <span className="mt-1">Publicar</span>
+                </Link>
+
+                <Link
+                  href="/favoritos"
+                  onClick={pedirUbicacion}
+                  className="flex flex-col items-center"
+                >
+                  <span className="text-xl">❤️</span>
+                  <span>Favoritos</span>
+                </Link>
+
+                <UserNavButton />
+              </div>
+            </div>
+          </div>
 
         </div>
       </main>

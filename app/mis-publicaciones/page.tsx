@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "../components/AuthGuard";
+import UserNavButton from "../components/UserNavButton";
+import { useUserLocation } from "../components/useUserLocation";
 
 type Publicacion = {
   id: number;
@@ -20,6 +22,7 @@ type Publicacion = {
 export default function MisPublicacionesPage() {
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [mensaje, setMensaje] = useState("Cargando publicaciones...");
+  const { pedirUbicacion } = useUserLocation();
 
   useEffect(() => {
     const cargarPublicaciones = async () => {
@@ -72,7 +75,7 @@ export default function MisPublicacionesPage() {
     <AuthGuard>
       <main className="min-h-screen bg-[#eef2f5] flex justify-center">
         <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-          <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+          <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
             <div className="flex items-center justify-between text-sm mb-4">
               <Link
                 href="/perfil"
@@ -84,7 +87,7 @@ export default function MisPublicacionesPage() {
             </div>
 
             <h1 className="text-2xl font-bold text-center">Mis publicaciones</h1>
-            <p className="text-center text-sm text-blue-100 mt-2">
+            <p className="text-center text-sm text-slate-100 mt-2">
               Administra lo que has publicado
             </p>
           </div>
@@ -139,7 +142,7 @@ export default function MisPublicacionesPage() {
                           </p>
                         )}
 
-                        <p className="text-xs text-blue-700 font-medium mt-1">
+                        <p className="text-xs text-slate-700 font-medium mt-1">
                           {item.precio || "Sin precio"}
                         </p>
 
@@ -171,7 +174,7 @@ export default function MisPublicacionesPage() {
 
                       <Link
                         href={`/editar-publicacion/${item.id}`}
-                        className="block w-full bg-blue-600 text-white text-sm font-medium px-3 py-2 rounded-xl text-center"
+                        className="block w-full bg-slate-600 text-white text-sm font-medium px-3 py-2 rounded-xl text-center"
                       >
                         Editar
                       </Link>
@@ -188,6 +191,39 @@ export default function MisPublicacionesPage() {
               </div>
             )}
           </section>
+
+          {/* NAVBAR */}
+          <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
+            <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
+              <div className="flex items-end justify-between text-xs text-gray-500">
+
+                <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center">
+                  <span className="text-xl">🏠</span>
+                  <span>Inicio</span>
+                </Link>
+
+                <Link href="/buscar" onClick={pedirUbicacion} className="flex flex-col items-center">
+                  <span className="text-xl">🔍</span>
+                  <span>Buscar</span>
+                </Link>
+
+                <Link href="/publicar" onClick={pedirUbicacion} className="flex flex-col items-center -mt-8">
+                  <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
+                    +
+                  </span>
+                  <span className="mt-1">Publicar</span>
+                </Link>
+
+                <Link href="/favoritos" onClick={pedirUbicacion} className="flex flex-col items-center">
+                  <span className="text-xl">❤️</span>
+                  <span>Favoritos</span>
+                </Link>
+
+                <UserNavButton />
+              </div>
+            </div>
+          </div>
+
         </div>
       </main>
     </AuthGuard>

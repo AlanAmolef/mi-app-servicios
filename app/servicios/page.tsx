@@ -124,7 +124,7 @@ export default function ServiciosPage() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-28">
-        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
+        <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
           <div className="flex items-center justify-start text-sm mb-4">
             <Link
               href="/"
@@ -188,7 +188,7 @@ export default function ServiciosPage() {
               onClick={() => setOrdenCercania(!ordenCercania)}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
                 ordenCercania
-                  ? "bg-blue-600 text-white"
+                  ? "bg-slate-600 text-white"
                   : "border bg-white text-gray-700"
               }`}
             >
@@ -252,7 +252,7 @@ export default function ServiciosPage() {
                         {servicio.descripcion}
                       </p>
 
-                      <p className="text-xs text-blue-600 mt-1">
+                      <p className="text-xs text-slate-600 mt-1">
                         {servicio.precio || "Sin precio"}
                       </p>
 
@@ -315,7 +315,7 @@ export default function ServiciosPage() {
               <Link
                 href="/buscar"
                 onClick={pedirUbicacion}
-                className="flex flex-col items-center text-blue-600"
+                className="flex flex-col items-center text-slate-600"
               >
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
@@ -326,7 +326,7 @@ export default function ServiciosPage() {
                 onClick={pedirUbicacion}
                 className="flex flex-col items-center -mt-8"
               >
-                <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
+                <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
