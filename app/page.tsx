@@ -121,7 +121,7 @@ export default function Home() {
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
         <InstallButton />
 
-        <div className="bg-blue-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
+        <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-20 pb-5 shadow-md">
           <div className="flex items-center justify-start text-sm mb-4">
             <button
               type="button"
@@ -156,7 +156,7 @@ export default function Home() {
           <div className="grid grid-cols-4 gap-2 mt-4">
             <Link href="/servicios" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
               <div className="text-2xl">🛠️</div>
-              <div className="text-xs mt-1 text-blue-700 font-medium">Servicios</div>
+              <div className="text-xs mt-1 text-slate-700 font-medium">Servicios</div>
             </Link>
 
             <Link href="/comida" onClick={pedirUbicacion} className="bg-white rounded-2xl p-3 text-center shadow-sm">
@@ -201,7 +201,7 @@ export default function Home() {
               type="button"
               onClick={pedirUbicacion}
               disabled={cargandoUbicacion}
-              className="mt-3 w-full rounded-2xl bg-white border border-blue-100 text-blue-700 text-sm font-semibold px-4 py-3 shadow-sm"
+              className="mt-3 w-full rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-4 py-3 shadow-sm"
             >
               {cargandoUbicacion
                 ? "Obteniendo ubicación..."
@@ -274,7 +274,7 @@ export default function Home() {
                         </p>
                       )}
 
-                      <p className="text-xs text-blue-700 font-medium mt-1">
+                      <p className="text-xs text-slate-700 font-medium mt-1">
                         {item.precio || "Sin precio"}
                       </p>
 
@@ -320,7 +320,7 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-              <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center text-blue-600">
+              <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center text-slate-700">
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
@@ -331,7 +331,7 @@ export default function Home() {
               </Link>
 
               <Link href="/publicar" onClick={pedirUbicacion} className="flex flex-col items-center -mt-8">
-                <span className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl shadow-md">
+                <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
