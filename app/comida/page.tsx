@@ -24,10 +24,47 @@ type Publicacion = {
   imagen_url: string | null;
   latitud: number | null;
   longitud: number | null;
+  dias_atencion: string[] | null;
+  hora_inicio: string | null;
+  hora_cierre: string | null;
 };
 
 type PublicacionConDistancia = Publicacion & {
   distanciaCalculada: number | null;
+};
+
+const estaDisponibleAhora = (producto: Publicacion) => {
+  if (!producto.disponible) return false;
+  if (!producto.dias_atencion || producto.dias_atencion.length === 0) return false;
+  if (!producto.hora_inicio || !producto.hora_cierre) return false;
+
+  const ahora = new Date();
+
+  const diasSemana = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+
+  const diaActual = diasSemana[ahora.getDay()];
+  const horaActual = ahora.toTimeString().slice(0, 5);
+
+  const diasNormalizados = producto.dias_atencion.map((dia) =>
+    dia.toLowerCase().trim()
+  );
+
+  const horaInicio = producto.hora_inicio.slice(0, 5);
+  const horaCierre = producto.hora_cierre.slice(0, 5);
+
+  return (
+    diasNormalizados.includes(diaActual) &&
+    horaActual >= horaInicio &&
+    horaActual <= horaCierre
+  );
 };
 
 export default function ComidaPage() {
@@ -96,7 +133,7 @@ export default function ComidaPage() {
       });
 
     if (soloDisponibles) {
-      lista = lista.filter((item) => item.disponible);
+      lista = lista.filter((item) => estaDisponibleAhora(item));
     }
 
     if (ordenCercania) {
@@ -191,86 +228,90 @@ export default function ComidaPage() {
                 </p>
               </div>
             ) : (
-              productosProcesados.map((producto) => (
-                <div
-                  key={producto.id}
-                  className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
-                >
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/publicacion/${producto.id}`}
-                      onClick={pedirUbicacion}
-                      className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
-                    >
-                      {producto.imagen_url ? (
-                        <img
-                          src={producto.imagen_url}
-                          alt={producto.titulo}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl">
-                          🍔
-                        </div>
-                      )}
-                    </Link>
+              productosProcesados.map((producto) => {
+                const disponibleAhora = estaDisponibleAhora(producto);
 
-                    <div className="min-w-0 flex-1">
+                return (
+                  <div
+                    key={producto.id}
+                    className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
+                  >
+                    <div className="flex gap-3">
                       <Link
                         href={`/publicacion/${producto.id}`}
                         onClick={pedirUbicacion}
-                        className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
                       >
-                        {producto.titulo}
+                        {producto.imagen_url ? (
+                          <img
+                            src={producto.imagen_url}
+                            alt={producto.titulo}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-3xl">
+                            🍔
+                          </div>
+                        )}
                       </Link>
 
-                      {producto.descripcion && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                          {producto.descripcion}
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/publicacion/${producto.id}`}
+                          onClick={pedirUbicacion}
+                          className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        >
+                          {producto.titulo}
+                        </Link>
+
+                        {producto.descripcion && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            {producto.descripcion}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-slate-700 font-medium mt-1">
+                          {producto.precio || "Sin precio"}
                         </p>
-                      )}
 
-                      <p className="text-xs text-slate-700 font-medium mt-1">
-                        {producto.precio || "Sin precio"}
-                      </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {producto.ubicacion || "Ubicación no indicada"}
+                        </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        {producto.ubicacion || "Ubicación no indicada"}
-                      </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatearDistancia(producto.distanciaCalculada)}
+                        </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatearDistancia(producto.distanciaCalculada)}
-                      </p>
+                        <p
+                          className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
+                            disponibleAhora
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {disponibleAhora
+                            ? "Disponible ahora"
+                            : "No disponible ahora"}
+                        </p>
+                      </div>
+                    </div>
 
-                      <p
-                        className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
-                          producto.disponible
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <a
+                        href={crearLinkWhatsApp(producto.telefono, producto.titulo)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={pedirUbicacion}
+                        className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
                       >
-                        {producto.disponible
-                          ? "Disponible ahora"
-                          : "No disponible"}
-                      </p>
+                        Contactar
+                      </a>
+
+                      <FavoriteButton publicacionId={producto.id} />
                     </div>
                   </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <a
-                      href={crearLinkWhatsApp(producto.telefono, producto.titulo)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={pedirUbicacion}
-                      className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
-                    >
-                      Contactar
-                    </a>
-
-                    <FavoriteButton publicacionId={producto.id} />
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>

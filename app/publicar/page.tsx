@@ -13,6 +13,24 @@ type Area = {
   y: number;
 };
 
+const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+
+const capitalizarPrimeraLetra = (texto: string) => {
+  const limpio = texto.trim();
+  if (!limpio) return "";
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+};
+
+const normalizarDescripcion = (texto: string) => {
+  const limpio = capitalizarPrimeraLetra(texto);
+  if (!limpio) return "";
+  return /[.!?]$/.test(limpio) ? limpio : `${limpio}.`;
+};
+
+const formatearPrecio = (valor: number) => {
+  return `$${valor.toLocaleString("es-CL")}`;
+};
+
 async function createImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -63,10 +81,11 @@ export default function PublicarPage() {
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [telefono, setTelefono] = useState("+569");
-  const [categoria, setCategoria] = useState("Servicios");
+  const [categoria, setCategoria] = useState("");
   const [ubicacion, setUbicacion] = useState("");
-  const [diasAtencion, setDiasAtencion] = useState("");
-  const [horarioAtencion, setHorarioAtencion] = useState("");
+  const [diasAtencion, setDiasAtencion] = useState<string[]>([]);
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaCierre, setHoraCierre] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [publicadoOk, setPublicadoOk] = useState(false);
   const [publicacionCreadaId, setPublicacionCreadaId] = useState<number | null>(null);
@@ -97,10 +116,11 @@ export default function PublicarPage() {
     setDescripcion("");
     setPrecio("");
     setTelefono("+569");
-    setCategoria("Servicios");
+    setCategoria("");
     setUbicacion("");
-    setDiasAtencion("");
-    setHorarioAtencion("");
+    setDiasAtencion([]);
+    setHoraInicio("");
+    setHoraCierre("");
     setLatitud(null);
     setLongitud(null);
     setUbicacionObtenida(false);
@@ -192,58 +212,55 @@ export default function PublicarPage() {
     setTelefono(valor);
   };
 
+  const manejarPrecio = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const soloNumeros = e.target.value.replace(/\D/g, "");
+    const numero = Number(soloNumeros);
+
+    if (!soloNumeros) {
+      setPrecio("");
+      return;
+    }
+
+    if (numero > 1000000000) {
+      setPrecio("1000000000");
+      return;
+    }
+
+    setPrecio(String(numero));
+  };
+
+  const alternarDia = (dia: string) => {
+    setDiasAtencion((actuales) =>
+      actuales.includes(dia)
+        ? actuales.filter((d) => d !== dia)
+        : [...actuales, dia]
+    );
+  };
+
   const telefonoEsValido = (valor: string) => /^\+569\d{8}$/.test(valor);
 
   const validarFormulario = () => {
     const tituloLimpio = titulo.trim();
     const descripcionLimpia = descripcion.trim();
     const ubicacionLimpia = ubicacion.trim();
-    const diasAtencionLimpios = diasAtencion.trim();
-    const horarioAtencionLimpio = horarioAtencion.trim();
+    const precioNumero = Number(precio);
 
-    if (!tituloLimpio) {
-      return "Debes escribir un título";
+    if (!tituloLimpio) return "Debes escribir un título";
+    if (tituloLimpio.length < 4) return "El título debe tener al menos 4 caracteres";
+    if (!descripcionLimpia) return "Debes escribir una descripción";
+    if (descripcionLimpia.length < 8) return "La descripción debe tener al menos 8 caracteres";
+    if (!precio || !Number.isInteger(precioNumero) || precioNumero < 1 || precioNumero > 1000000000) {
+      return "El precio debe ser un número entero entre 1 y 1.000.000.000";
     }
-
-    if (tituloLimpio.length < 4) {
-      return "El título debe tener al menos 4 caracteres";
-    }
-
-    if (!descripcionLimpia) {
-      return "Debes escribir una descripción";
-    }
-
-    if (descripcionLimpia.length < 8) {
-      return "La descripción debe tener al menos 8 caracteres";
-    }
-
-    if (!telefonoEsValido(telefono)) {
-      return "El teléfono debe tener formato +569XXXXXXXX";
-    }
-
-    if (!categoria.trim()) {
-      return "Debes seleccionar una categoría";
-    }
-
-    if (!croppedBlob) {
-      return "Debes subir una imagen y aplicar el recorte";
-    }
-
-    if (!ubicacionLimpia) {
-      return "Debes escribir una ubicación visible para los usuarios";
-    }
-
-    if (!ubicacionObtenida || latitud === null || longitud === null) {
-      return "Debes usar tu ubicación actual para publicar";
-    }
-
-    if (!diasAtencionLimpios) {
-      return "Debes escribir los días de atención";
-    }
-
-    if (!horarioAtencionLimpio) {
-      return "Debes escribir el horario de atención";
-    }
+    if (!telefonoEsValido(telefono)) return "El teléfono debe tener formato +569XXXXXXXX";
+    if (!categoria.trim()) return "Debes seleccionar una categoría";
+    if (!croppedBlob) return "Debes subir una imagen y aplicar el recorte";
+    if (!ubicacionLimpia) return "Debes escribir una ubicación visible para los usuarios";
+    if (!ubicacionObtenida || latitud === null || longitud === null) return "Debes usar tu ubicación actual para publicar";
+    if (diasAtencion.length === 0) return "Debes seleccionar al menos un día de atención";
+    if (!horaInicio) return "Debes seleccionar la hora de inicio";
+    if (!horaCierre) return "Debes seleccionar la hora de cierre";
+    if (horaInicio >= horaCierre) return "La hora de cierre debe ser posterior a la hora de inicio";
 
     return null;
   };
@@ -295,18 +312,26 @@ export default function PublicarPage() {
       imagenUrl = publicUrlData.publicUrl;
     }
 
+    const precioNumero = Number(precio);
+    const tituloFinal = capitalizarPrimeraLetra(titulo);
+    const descripcionFinal = normalizarDescripcion(descripcion);
+    const horarioFinal = `${horaInicio} - ${horaCierre}`;
+
     const { data, error } = await supabase
       .from("publicaciones")
       .insert([
         {
-          titulo: titulo.trim(),
-          descripcion: descripcion.trim(),
-          precio: precio.trim(),
+          titulo: tituloFinal,
+          descripcion: descripcionFinal,
+          precio: formatearPrecio(precioNumero),
+          precio_numero: precioNumero,
           telefono,
           categoria,
           ubicacion: ubicacion.trim(),
-          dias_atencion: diasAtencion.trim(),
-          horario_atencion: horarioAtencion.trim(),
+          dias_atencion: diasAtencion,
+          horario_atencion: horarioFinal,
+          hora_inicio: horaInicio,
+          hora_cierre: horaCierre,
           distancia: "",
           disponible: true,
           user_id: user.id,
@@ -333,10 +358,11 @@ export default function PublicarPage() {
     setDescripcion("");
     setPrecio("");
     setTelefono("+569");
-    setCategoria("Servicios");
+    setCategoria("");
     setUbicacion("");
-    setDiasAtencion("");
-    setHorarioAtencion("");
+    setDiasAtencion([]);
+    setHoraInicio("");
+    setHoraCierre("");
     setLatitud(null);
     setLongitud(null);
     setUbicacionObtenida(false);
@@ -359,7 +385,7 @@ export default function PublicarPage() {
               ← Inicio
             </Link>
 
-            <h1 className="text-xl font-bold">Crear publicación</h1>
+            <h1 className="text-xl font-bold text-gray-900">Crear publicación</h1>
 
             <div className="w-[72px]" />
           </div>
@@ -398,54 +424,106 @@ export default function PublicarPage() {
             </div>
           )}
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Título"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-900">Título</label>
+            <input
+              className="w-full border p-2 rounded bg-white text-gray-900"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+            />
+          </div>
 
-          <textarea
-            className="w-full border p-2 rounded"
-            placeholder="Descripción"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-900">Descripción</label>
+            <textarea
+              className="w-full border p-2 rounded bg-white text-gray-900"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+            />
+          </div>
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Precio"
-            value={precio}
-            onChange={(e) => setPrecio(e.target.value)}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-900">Precio</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              className="w-full border p-2 rounded bg-white text-gray-900"
+              value={precio}
+              onChange={manejarPrecio}
+            />
+            <p className="text-xs text-gray-500">
+              Solo números. Ejemplo: 10000
+            </p>
+          </div>
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="+56912345678"
-            value={telefono}
-            onChange={manejarTelefono}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-900">Teléfono</label>
+            <input
+              className="w-full border p-2 rounded bg-white text-gray-900"
+              value={telefono}
+              onChange={manejarTelefono}
+            />
+          </div>
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Ubicación visible para los usuarios"
-            value={ubicacion}
-            onChange={(e) => setUbicacion(e.target.value)}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-900">
+              Ubicación visible para los usuarios
+            </label>
+            <input
+              className="w-full border p-2 rounded bg-white text-gray-900"
+              value={ubicacion}
+              onChange={(e) => setUbicacion(e.target.value)}
+            />
+          </div>
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Días de atención. Ej: Lun a Sáb"
-            value={diasAtencion}
-            onChange={(e) => setDiasAtencion(e.target.value)}
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-900">
+              Días de atención
+            </label>
 
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Horario de atención. Ej: 09:00 - 18:00"
-            value={horarioAtencion}
-            onChange={(e) => setHorarioAtencion(e.target.value)}
-          />
+            <div className="grid grid-cols-2 gap-2">
+              {DIAS.map((dia) => (
+                <button
+                  key={dia}
+                  type="button"
+                  onClick={() => alternarDia(dia)}
+                  className={`rounded-xl border p-3 text-sm font-medium capitalize transition ${
+                    diasAtencion.includes(dia)
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-gray-300 bg-white text-gray-900"
+                  }`}
+                >
+                  {dia}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-900">
+                Hora de inicio
+              </label>
+              <input
+                type="time"
+                className="w-full border p-2 rounded bg-white text-gray-900"
+                value={horaInicio}
+                onChange={(e) => setHoraInicio(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-900">
+                Hora de cierre
+              </label>
+              <input
+                type="time"
+                className="w-full border p-2 rounded bg-white text-gray-900"
+                value={horaCierre}
+                onChange={(e) => setHoraCierre(e.target.value)}
+              />
+            </div>
+          </div>
 
           <button
             type="button"
@@ -461,24 +539,36 @@ export default function PublicarPage() {
             </div>
           )}
 
-          <select
-            className="w-full border p-2 rounded"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-          >
-            <option>Servicios</option>
-            <option>Comida</option>
-            <option>Arriendos</option>
-            <option>Avisos</option>
-          </select>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-900">
+              Categoría
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              {["Servicios", "Comida", "Arriendos", "Avisos"].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoria(cat)}
+                  className={`rounded-xl border p-3 text-sm font-medium transition ${
+                    categoria === cat
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-gray-300 bg-white text-gray-900"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium">Imagen</label>
+            <label className="block text-sm font-medium text-gray-900">Imagen</label>
             <input
               type="file"
               accept="image/*"
               onChange={manejarArchivo}
-              className="w-full border p-2 rounded bg-white"
+              className="w-full border p-2 rounded bg-white text-gray-900"
             />
           </div>
 
@@ -497,7 +587,7 @@ export default function PublicarPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm">Zoom</label>
+                <label className="block text-sm text-gray-900">Zoom</label>
                 <input
                   type="range"
                   min={1}
@@ -521,7 +611,7 @@ export default function PublicarPage() {
 
           {croppedPreview && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Vista previa</p>
+              <p className="text-sm font-medium text-gray-900">Vista previa</p>
               <img
                 src={croppedPreview}
                 alt="Vista previa recortada"

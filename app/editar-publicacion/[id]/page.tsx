@@ -16,6 +16,45 @@ type Area = {
   y: number;
 };
 
+const DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+
+const capitalizarPrimeraLetra = (texto: string) => {
+  const limpio = texto.trim();
+  if (!limpio) return "";
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+};
+
+const normalizarDescripcion = (texto: string) => {
+  const limpio = capitalizarPrimeraLetra(texto);
+  if (!limpio) return "";
+  return /[.!?]$/.test(limpio) ? limpio : `${limpio}.`;
+};
+
+const formatearPrecio = (valor: number) => {
+  return `$${valor.toLocaleString("es-CL")}`;
+};
+
+const precioATextoNumero = (valor: unknown) => {
+  if (typeof valor === "number") return String(valor);
+  if (typeof valor === "string") return valor.replace(/\D/g, "");
+  return "";
+};
+
+const normalizarDiasDesdeBD = (valor: unknown) => {
+  if (Array.isArray(valor)) {
+    return valor.filter((dia): dia is string => typeof dia === "string");
+  }
+
+  if (typeof valor === "string") {
+    return valor
+      .split(",")
+      .map((dia) => dia.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 async function createImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -71,10 +110,11 @@ export default function EditarPublicacionPage() {
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [telefono, setTelefono] = useState("+569");
-  const [categoria, setCategoria] = useState("Servicios");
+  const [categoria, setCategoria] = useState("");
   const [ubicacion, setUbicacion] = useState("");
-  const [diasAtencion, setDiasAtencion] = useState("");
-  const [horarioAtencion, setHorarioAtencion] = useState("");
+  const [diasAtencion, setDiasAtencion] = useState<string[]>([]);
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaCierre, setHoraCierre] = useState("");
   const [disponible, setDisponible] = useState(true);
 
   const [latitud, setLatitud] = useState<number | null>(null);
@@ -130,12 +170,13 @@ export default function EditarPublicacionPage() {
 
       setTitulo(data.titulo || "");
       setDescripcion(data.descripcion || "");
-      setPrecio(data.precio || "");
+      setPrecio(precioATextoNumero(data.precio_numero ?? data.precio));
       setTelefono(data.telefono || "+569");
-      setCategoria(data.categoria || "Servicios");
+      setCategoria(data.categoria || "");
       setUbicacion(data.ubicacion || "");
-      setDiasAtencion(data.dias_atencion || "");
-      setHorarioAtencion(data.horario_atencion || "");
+      setDiasAtencion(normalizarDiasDesdeBD(data.dias_atencion));
+      setHoraInicio(data.hora_inicio ? String(data.hora_inicio).slice(0, 5) : "");
+      setHoraCierre(data.hora_cierre ? String(data.hora_cierre).slice(0, 5) : "");
       setDisponible(data.disponible ?? true);
       setLatitud(data.latitud ?? null);
       setLongitud(data.longitud ?? null);
@@ -225,14 +266,38 @@ export default function EditarPublicacionPage() {
     setTelefono(valor);
   };
 
+  const manejarPrecio = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const soloNumeros = e.target.value.replace(/\D/g, "");
+    const numero = Number(soloNumeros);
+
+    if (!soloNumeros) {
+      setPrecio("");
+      return;
+    }
+
+    if (numero > 1000000000) {
+      setPrecio("1000000000");
+      return;
+    }
+
+    setPrecio(String(numero));
+  };
+
+  const alternarDia = (dia: string) => {
+    setDiasAtencion((actuales) =>
+      actuales.includes(dia)
+        ? actuales.filter((d) => d !== dia)
+        : [...actuales, dia]
+    );
+  };
+
   const telefonoEsValido = (valor: string) => /^\+569\d{8}$/.test(valor);
 
   const validarFormulario = () => {
     const tituloLimpio = titulo.trim();
     const descripcionLimpia = descripcion.trim();
     const ubicacionLimpia = ubicacion.trim();
-    const diasAtencionLimpios = diasAtencion.trim();
-    const horarioAtencionLimpio = horarioAtencion.trim();
+    const precioNumero = Number(precio);
 
     if (!tituloLimpio) {
       return "Debes escribir un título";
@@ -248,6 +313,10 @@ export default function EditarPublicacionPage() {
 
     if (descripcionLimpia.length < 8) {
       return "La descripción debe tener al menos 8 caracteres";
+    }
+
+    if (!precio || !Number.isInteger(precioNumero) || precioNumero < 1 || precioNumero > 1000000000) {
+      return "El precio debe ser un número entero entre 1 y 1.000.000.000";
     }
 
     if (!telefonoEsValido(telefono)) {
@@ -271,12 +340,20 @@ export default function EditarPublicacionPage() {
       return "Debes usar tu ubicación actual para guardar";
     }
 
-    if (!diasAtencionLimpios) {
-      return "Debes escribir los días de atención";
+    if (diasAtencion.length === 0) {
+      return "Debes seleccionar al menos un día de atención";
     }
 
-    if (!horarioAtencionLimpio) {
-      return "Debes escribir el horario de atención";
+    if (!horaInicio) {
+      return "Debes seleccionar la hora de inicio";
+    }
+
+    if (!horaCierre) {
+      return "Debes seleccionar la hora de cierre";
+    }
+
+    if (horaInicio >= horaCierre) {
+      return "La hora de cierre debe ser posterior a la hora de inicio";
     }
 
     return null;
@@ -320,17 +397,25 @@ export default function EditarPublicacionPage() {
       imagenUrlFinal = publicUrlData.publicUrl;
     }
 
+    const precioNumero = Number(precio);
+    const tituloFinal = capitalizarPrimeraLetra(titulo);
+    const descripcionFinal = normalizarDescripcion(descripcion);
+    const horarioFinal = `${horaInicio} - ${horaCierre}`;
+
     const { error } = await supabase
       .from("publicaciones")
       .update({
-        titulo: titulo.trim(),
-        descripcion: descripcion.trim(),
-        precio: precio.trim(),
+        titulo: tituloFinal,
+        descripcion: descripcionFinal,
+        precio: formatearPrecio(precioNumero),
+        precio_numero: precioNumero,
         telefono,
         categoria,
         ubicacion: ubicacion.trim(),
-        dias_atencion: diasAtencion.trim(),
-        horario_atencion: horarioAtencion.trim(),
+        dias_atencion: diasAtencion,
+        horario_atencion: horarioFinal,
+        hora_inicio: horaInicio,
+        hora_cierre: horaCierre,
         disponible,
         imagen_url: imagenUrlFinal,
         latitud,
@@ -380,54 +465,114 @@ export default function EditarPublicacionPage() {
               </div>
             ) : (
               <>
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Título"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Título
+                  </label>
+                  <input
+                    className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                    value={titulo}
+                    onChange={(e) => setTitulo(e.target.value)}
+                  />
+                </div>
 
-                <textarea
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Descripción"
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Descripción
+                  </label>
+                  <textarea
+                    className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                  />
+                </div>
 
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Precio"
-                  value={precio}
-                  onChange={(e) => setPrecio(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Precio
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                    value={precio}
+                    onChange={manejarPrecio}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Solo números. Ejemplo: 10000
+                  </p>
+                </div>
 
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="+56912345678"
-                  value={telefono}
-                  onChange={manejarTelefono}
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Teléfono
+                  </label>
+                  <input
+                    className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                    value={telefono}
+                    onChange={manejarTelefono}
+                  />
+                </div>
 
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Ubicación visible para los usuarios"
-                  value={ubicacion}
-                  onChange={(e) => setUbicacion(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Ubicación visible para los usuarios
+                  </label>
+                  <input
+                    className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                    value={ubicacion}
+                    onChange={(e) => setUbicacion(e.target.value)}
+                  />
+                </div>
 
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Días de atención. Ej: Lun a Sáb"
-                  value={diasAtencion}
-                  onChange={(e) => setDiasAtencion(e.target.value)}
-                />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Días de atención
+                  </label>
 
-                <input
-                  className="w-full border p-3 rounded-xl bg-white"
-                  placeholder="Horario de atención. Ej: 09:00 - 18:00"
-                  value={horarioAtencion}
-                  onChange={(e) => setHorarioAtencion(e.target.value)}
-                />
+                  <div className="grid grid-cols-2 gap-2">
+                    {DIAS.map((dia) => (
+                      <button
+                        key={dia}
+                        type="button"
+                        onClick={() => alternarDia(dia)}
+                        className={`rounded-xl border p-3 text-sm font-medium capitalize transition ${
+                          diasAtencion.includes(dia)
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        }`}
+                      >
+                        {dia}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-900">
+                      Hora de inicio
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                      value={horaInicio}
+                      onChange={(e) => setHoraInicio(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-900">
+                      Hora de cierre
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full border p-3 rounded-xl bg-white text-gray-900"
+                      value={horaCierre}
+                      onChange={(e) => setHoraCierre(e.target.value)}
+                    />
+                  </div>
+                </div>
 
                 <button
                   type="button"
@@ -443,16 +588,28 @@ export default function EditarPublicacionPage() {
                   </div>
                 )}
 
-                <select
-                  className="w-full border p-3 rounded-xl bg-white"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                >
-                  <option>Servicios</option>
-                  <option>Comida</option>
-                  <option>Arriendos</option>
-                  <option>Avisos</option>
-                </select>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Categoría
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Servicios", "Comida", "Arriendos", "Avisos"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategoria(cat)}
+                        className={`rounded-xl border p-3 text-sm font-medium transition ${
+                          categoria === cat
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <label className="flex items-center gap-2 bg-white border rounded-xl p-3">
                   <input

@@ -24,10 +24,47 @@ type Publicacion = {
   imagen_url: string | null;
   latitud: number | null;
   longitud: number | null;
+  dias_atencion: string[] | null;
+  hora_inicio: string | null;
+  hora_cierre: string | null;
 };
 
 type PublicacionConDistancia = Publicacion & {
   distanciaCalculada: number | null;
+};
+
+const estaDisponibleAhora = (servicio: Publicacion) => {
+  if (!servicio.disponible) return false;
+  if (!servicio.dias_atencion || servicio.dias_atencion.length === 0) return false;
+  if (!servicio.hora_inicio || !servicio.hora_cierre) return false;
+
+  const ahora = new Date();
+
+  const diasSemana = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+
+  const diaActual = diasSemana[ahora.getDay()];
+  const horaActual = ahora.toTimeString().slice(0, 5);
+
+  const diasNormalizados = servicio.dias_atencion.map((dia) =>
+    dia.toLowerCase().trim()
+  );
+
+  const horaInicio = servicio.hora_inicio.slice(0, 5);
+  const horaCierre = servicio.hora_cierre.slice(0, 5);
+
+  return (
+    diasNormalizados.includes(diaActual) &&
+    horaActual >= horaInicio &&
+    horaActual <= horaCierre
+  );
 };
 
 export default function ServiciosPage() {
@@ -93,7 +130,7 @@ export default function ServiciosPage() {
       });
 
     if (soloDisponibles) {
-      lista = lista.filter((item) => item.disponible);
+      lista = lista.filter((item) => estaDisponibleAhora(item));
     }
 
     if (ordenCercania) {
@@ -215,87 +252,91 @@ export default function ServiciosPage() {
             ) : serviciosProcesados.length === 0 ? (
               <p className="text-sm text-gray-500">No hay resultados.</p>
             ) : (
-              serviciosProcesados.map((servicio) => (
-                <div
-                  key={servicio.id}
-                  className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
-                >
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/publicacion/${servicio.id}`}
-                      onClick={pedirUbicacion}
-                      className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
-                    >
-                      {servicio.imagen_url ? (
-                        <img
-                          src={servicio.imagen_url}
-                          className="w-full h-full object-cover"
-                          alt={servicio.titulo}
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-2xl">
-                          🛠️
-                        </div>
-                      )}
-                    </Link>
+              serviciosProcesados.map((servicio) => {
+                const disponibleAhora = estaDisponibleAhora(servicio);
 
-                    <div className="flex-1 min-w-0">
+                return (
+                  <div
+                    key={servicio.id}
+                    className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
+                  >
+                    <div className="flex gap-3">
                       <Link
                         href={`/publicacion/${servicio.id}`}
                         onClick={pedirUbicacion}
-                        className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
                       >
-                        {servicio.titulo}
+                        {servicio.imagen_url ? (
+                          <img
+                            src={servicio.imagen_url}
+                            className="w-full h-full object-cover"
+                            alt={servicio.titulo}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-2xl">
+                            🛠️
+                          </div>
+                        )}
                       </Link>
 
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                        {servicio.descripcion}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={`/publicacion/${servicio.id}`}
+                          onClick={pedirUbicacion}
+                          className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        >
+                          {servicio.titulo}
+                        </Link>
 
-                      <p className="text-xs text-slate-600 mt-1">
-                        {servicio.precio || "Sin precio"}
-                      </p>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          {servicio.descripcion}
+                        </p>
 
-                      <p className="text-xs text-gray-500">
-                        {servicio.ubicacion || "Ubicación no indicada"}
-                      </p>
+                        <p className="text-xs text-slate-600 mt-1">
+                          {servicio.precio || "Sin precio"}
+                        </p>
 
-                      <p className="text-xs text-gray-500">
-                        {formatearDistancia(servicio.distanciaCalculada)}
-                      </p>
+                        <p className="text-xs text-gray-500">
+                          {servicio.ubicacion || "Ubicación no indicada"}
+                        </p>
 
-                      <p
-                        className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
-                          servicio.disponible
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                        <p className="text-xs text-gray-500">
+                          {formatearDistancia(servicio.distanciaCalculada)}
+                        </p>
+
+                        <p
+                          className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
+                            disponibleAhora
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {disponibleAhora
+                            ? "Disponible ahora"
+                            : "No disponible ahora"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <a
+                        href={crearLinkWhatsApp(
+                          servicio.telefono,
+                          servicio.titulo
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={pedirUbicacion}
+                        className="bg-green-600 text-white text-sm py-2 rounded-xl text-center"
                       >
-                        {servicio.disponible
-                          ? "Disponible ahora"
-                          : "No disponible"}
-                      </p>
+                        Contactar
+                      </a>
+
+                      <FavoriteButton publicacionId={servicio.id} />
                     </div>
                   </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <a
-                      href={crearLinkWhatsApp(
-                        servicio.telefono,
-                        servicio.titulo
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={pedirUbicacion}
-                      className="bg-green-600 text-white text-sm py-2 rounded-xl text-center"
-                    >
-                      Contactar
-                    </a>
-
-                    <FavoriteButton publicacionId={servicio.id} />
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>

@@ -24,10 +24,47 @@ type Publicacion = {
   imagen_url: string | null;
   latitud: number | null;
   longitud: number | null;
+  dias_atencion: string[] | null;
+  hora_inicio: string | null;
+  hora_cierre: string | null;
 };
 
 type PublicacionConDistancia = Publicacion & {
   distanciaCalculada: number | null;
+};
+
+const estaDisponibleAhora = (item: Publicacion) => {
+  if (!item.disponible) return false;
+  if (!item.dias_atencion || item.dias_atencion.length === 0) return false;
+  if (!item.hora_inicio || !item.hora_cierre) return false;
+
+  const ahora = new Date();
+
+  const diasSemana = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+
+  const diaActual = diasSemana[ahora.getDay()];
+  const horaActual = ahora.toTimeString().slice(0, 5);
+
+  const diasNormalizados = item.dias_atencion.map((dia) =>
+    dia.toLowerCase().trim()
+  );
+
+  const horaInicio = item.hora_inicio.slice(0, 5);
+  const horaCierre = item.hora_cierre.slice(0, 5);
+
+  return (
+    diasNormalizados.includes(diaActual) &&
+    horaActual >= horaInicio &&
+    horaActual <= horaCierre
+  );
 };
 
 export default function ArriendosPage() {
@@ -96,7 +133,7 @@ export default function ArriendosPage() {
       });
 
     if (soloDisponibles) {
-      lista = lista.filter((item) => item.disponible);
+      lista = lista.filter((item) => estaDisponibleAhora(item));
     }
 
     if (ordenCercania) {
@@ -127,8 +164,6 @@ export default function ArriendosPage() {
   return (
     <main className="min-h-screen bg-[#eef2f5] flex justify-center">
       <div className="w-full max-w-sm min-h-screen bg-[#eef2f5] pb-24">
-
-        {/* HEADER */}
         <div className="bg-slate-600 text-white rounded-b-3xl px-4 pt-6 pb-5 shadow-md">
           <div className="flex items-center justify-start text-sm mb-4">
             <Link
@@ -154,7 +189,6 @@ export default function ArriendosPage() {
           </div>
         </div>
 
-        {/* FILTROS */}
         <section className="px-4 mt-4">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
@@ -181,7 +215,6 @@ export default function ArriendosPage() {
           </div>
         </section>
 
-        {/* LISTA */}
         <section className="px-4 mt-5">
           <div className="mt-3 space-y-3">
             {mensaje ? (
@@ -195,113 +228,131 @@ export default function ArriendosPage() {
                 </p>
               </div>
             ) : (
-              arriendosProcesados.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
-                >
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/publicacion/${item.id}`}
-                      onClick={pedirUbicacion}
-                      className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
-                    >
-                      {item.imagen_url ? (
-                        <img
-                          src={item.imagen_url}
-                          alt={item.titulo}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl">
-                          🏠
-                        </div>
-                      )}
-                    </Link>
+              arriendosProcesados.map((item) => {
+                const disponibleAhora = estaDisponibleAhora(item);
 
-                    <div className="min-w-0 flex-1">
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-2xl p-3 shadow-sm border border-gray-200"
+                  >
+                    <div className="flex gap-3">
                       <Link
                         href={`/publicacion/${item.id}`}
                         onClick={pedirUbicacion}
-                        className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 block shrink-0"
                       >
-                        {item.titulo}
+                        {item.imagen_url ? (
+                          <img
+                            src={item.imagen_url}
+                            alt={item.titulo}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-3xl">
+                            🏠
+                          </div>
+                        )}
                       </Link>
 
-                      {item.descripcion && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                          {item.descripcion}
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/publicacion/${item.id}`}
+                          onClick={pedirUbicacion}
+                          className="font-semibold text-sm text-gray-900 hover:underline block truncate"
+                        >
+                          {item.titulo}
+                        </Link>
+
+                        {item.descripcion && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            {item.descripcion}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-slate-700 font-medium mt-1">
+                          {item.precio || "Sin precio"}
                         </p>
-                      )}
 
-                      <p className="text-xs text-slate-700 font-medium mt-1">
-                        {item.precio || "Sin precio"}
-                      </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {item.ubicacion || "Ubicación no indicada"}
+                        </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.ubicacion || "Ubicación no indicada"}
-                      </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatearDistancia(item.distanciaCalculada)}
+                        </p>
 
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatearDistancia(item.distanciaCalculada)}
-                      </p>
+                        <p
+                          className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
+                            disponibleAhora
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {disponibleAhora
+                            ? "Disponible ahora"
+                            : "No disponible ahora"}
+                        </p>
+                      </div>
+                    </div>
 
-                      <p
-                        className={`mt-2 inline-block rounded-full px-2 py-1 text-[10px] font-medium ${
-                          item.disponible
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <a
+                        href={crearLinkWhatsApp(item.telefono, item.titulo)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={pedirUbicacion}
+                        className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
                       >
-                        {item.disponible
-                          ? "Disponible ahora"
-                          : "No disponible"}
-                      </p>
+                        Contactar
+                      </a>
+
+                      <FavoriteButton publicacionId={item.id} />
                     </div>
                   </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <a
-                      href={crearLinkWhatsApp(item.telefono, item.titulo)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={pedirUbicacion}
-                      className="block w-full bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl text-center"
-                    >
-                      Contactar
-                    </a>
-
-                    <FavoriteButton publicacionId={item.id} />
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>
 
-        {/* NAVBAR */}
         <div className="fixed bottom-0 left-0 right-0 flex justify-center pointer-events-none">
           <div className="w-full max-w-sm bg-white border-t border-gray-200 rounded-t-3xl px-6 py-3 shadow-lg pointer-events-auto">
             <div className="flex items-end justify-between text-xs text-gray-500">
-
-              <Link href="/" onClick={pedirUbicacion} className="flex flex-col items-center gap-1">
+              <Link
+                href="/"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center gap-1"
+              >
                 <span className="text-xl">🏠</span>
                 <span>Inicio</span>
               </Link>
 
-              <Link href="/buscar" onClick={pedirUbicacion} className="flex flex-col items-center gap-1 text-slate-600 font-medium">
+              <Link
+                href="/buscar"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center gap-1 text-slate-600 font-medium"
+              >
                 <span className="text-xl">🔍</span>
                 <span>Buscar</span>
               </Link>
 
-              <Link href="/publicar" onClick={pedirUbicacion} className="flex flex-col items-center gap-1 -mt-8">
+              <Link
+                href="/publicar"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center gap-1 -mt-8"
+              >
                 <span className="w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center text-3xl shadow-md">
                   +
                 </span>
                 <span className="mt-1">Publicar</span>
               </Link>
 
-              <Link href="/favoritos" onClick={pedirUbicacion} className="flex flex-col items-center">
+              <Link
+                href="/favoritos"
+                onClick={pedirUbicacion}
+                className="flex flex-col items-center"
+              >
                 <span className="text-xl">❤️</span>
                 <span>Favoritos</span>
               </Link>
@@ -310,7 +361,6 @@ export default function ArriendosPage() {
             </div>
           </div>
         </div>
-
       </div>
     </main>
   );
